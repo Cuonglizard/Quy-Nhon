@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102a43">
+  <title>Ảnh Quy Nhơn</title>
+  <style>
+    :root {
+      --ink: #102a43;
+      --muted: #627d98;
+      --paper: #f5f7f2;
+      --line: #d9e2ec;
+      --accent: #d97706;
+      --accent-dark: #9a3412;
+      --white: #fff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    header {
+      padding: 30px max(20px, calc((100vw - 1180px) / 2));
+      color: var(--white);
+      background: linear-gradient(135deg, #102a43 0%, #1f4e5f 62%, #d97706 150%);
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #fbd38d;
+      font: 700 12px/1.2 Arial, sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: clamp(34px, 8vw, 64px); line-height: .98; }
+    .intro { max-width: 580px; margin: 14px 0 0; color: #d9e2ec; font: 16px/1.5 Arial, sans-serif; }
+    main { max-width: 1180px; margin: 0 auto; padding: 22px 20px 56px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 24px; }
+    .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+    button, input { font: 15px Arial, sans-serif; }
+    button {
+      border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px;
+      color: var(--ink); background: var(--white); cursor: pointer;
+    }
+    button.active, button:hover { border-color: var(--ink); color: var(--white); background: var(--ink); }
+    input { min-width: 190px; flex: 1; border: 1px solid var(--line); border-radius: 999px; padding: 11px 16px; background: var(--white); }
+    .count { margin: 0 0 14px; color: var(--muted); font: 13px Arial, sans-serif; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .photo { position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 4px; background: #d9e2ec; cursor: pointer; }
+    .photo img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .35s ease; }
+    .photo:hover img { transform: scale(1.04); }
+    .photo figcaption { position: absolute; right: 0; bottom: 0; left: 0; padding: 30px 9px 8px; color: white; background: linear-gradient(transparent, rgba(16, 42, 67, .82)); font: 12px Arial, sans-serif; opacity: 0; transition: opacity .2s ease; }
+    .photo:hover figcaption { opacity: 1; }
+    .empty { padding: 30px; color: var(--muted); text-align: center; font: 16px Arial, sans-serif; }
+    .lightbox[hidden] { display: none; }
+    .lightbox { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 18px; background: rgba(5, 20, 32, .94); }
+    .viewer { position: relative; display: grid; place-items: center; width: min(100%, 1100px); height: min(90vh, 850px); }
+    .viewer img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .viewer-name { position: absolute; bottom: 0; left: 50%; max-width: calc(100% - 120px); overflow: hidden; color: #d9e2ec; transform: translateX(-50%); font: 13px Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .viewer-button { position: absolute; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; color: white; background: rgba(255,255,255,.14); font-size: 25px; }
+    .viewer-button:hover { background: var(--accent); }
+    .close { top: 0; right: 0; }
+    .previous { left: 0; top: 50%; transform: translateY(-50%); }
+    .next { right: 0; top: 50%; transform: translateY(-50%); }
+    .download { right: 52px; top: 0; width: auto; padding: 0 13px; font-size: 13px; }
+    @media (max-width: 560px) {
+      header { padding: 24px 18px; }
+      main { padding: 18px 12px 40px; }
+      .gallery { grid-template-columns: repeat(2, 1fr); gap: 7px; }
+      .photo figcaption { opacity: 1; }
+      .toolbar { align-items: stretch; }
+      .tabs { width: 100%; }
+      input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">Bộ sưu tập cá nhân</p>
+    <h1>Quy Nhơn</h1>
+    <p class="intro">Những khoảnh khắc được lưu lại bên biển. Chạm vào ảnh để xem toàn màn hình.</p>
+  </header>
+  <main>
+    <div class="toolbar">
+      <div class="tabs" id="tabs" aria-label="Chọn album"></div>
+      <input id="search" type="search" placeholder="Tìm theo tên ảnh..." aria-label="Tìm ảnh">
+    </div>
+    <p class="count" id="count"></p>
+    <section class="gallery" id="gallery"></section>
+  </main>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <div class="viewer">
+      <button class="viewer-button close" id="close" aria-label="Đóng">&times;</button>
+      <a class="viewer-button download" id="download" href="#" download>Tải ảnh</a>
+      <button class="viewer-button previous" id="previous" aria-label="Ảnh trước">&#8249;</button>
+      <img id="largeImage" alt="">
+      <button class="viewer-button next" id="next" aria-label="Ảnh tiếp theo">&#8250;</button>
+      <p class="viewer-name" id="viewerName"></p>
+    </div>
+  </div>
+
+  <script>
+    const albums = [
+      {
+        name: 'Quy Nhơn',
+        folder: 'Quy Nhơn',
+        photos: [
+          'IMG_2897.JPG', 'IMG_2914.JPG', 'IMG_2924.JPG', 'IMG_2938.JPG', 'IMG_2951.JPG', 'IMG_2964.JPG', 'IMG_2978.JPG', 'IMG_2992.JPG', 'IMG_3015.JPG', 'IMG_3029.JPG', 'IMG_3034.JPG', 'IMG_3054.JPG', 'IMG_3084.JPG', 'IMG_3088.JPG', 'IMG_3095.JPG', 'IMG_3120.JPG', 'IMG_3135.JPG', 'IMG_3143.JPG', 'IMG_3150.JPG', 'IMG_3157.JPG', 'IMG_3164.JPG', 'IMG_3171.JPG', 'IMG_3177.JPG', 'IMG_3183.JPG', 'IMG_3194.JPG', 'IMG_3211.JPG', 'IMG_3216.JPG', 'IMG_3222.JPG', 'IMG_3228.JPG', 'IMG_3233.JPG', 'IMG_3238.JPG', 'IMG_3244.JPG', 'IMG_3258.JPG', 'IMG_3267.JPG', 'IMG_3275.JPG', 'IMG_3283.JPG', 'IMG_3292.JPG', 'IMG_3301.JPG', 'IMG_3304.JPG', 'IMG_3308.JPG', 'IMG_3310.JPG', 'IMG_3313.JPG', 'IMG_3316.JPG', 'IMG_3321.JPG', 'IMG_3326.JPG', 'IMG_3338.JPG', 'IMG_3340.JPG', 'IMG_3346.JPG', 'IMG_3347.JPG', 'IMG_3349.JPG', 'IMG_3351.JPG', 'IMG_3352.JPG', 'IMG_3353.JPG', 'IMG_3356.JPG', 'IMG_3357.JPG', 'IMG_3361.JPG', 'IMG_3362.JPG', 'IMG_3363.JPG', 'IMG_3366.JPG', 'IMG_3367.JPG', 'IMG_3368.JPG', 'IMG_3369.JPG', 'IMG_3370.JPG', 'IMG_3371.JPG', 'IMG_3372.JPG', 'IMG_3373.JPG', 'IMG_3374.JPG', 'IMG_3375.JPG', 'IMG_3378.JPG', 'IMG_3379.JPG', 'IMG_3380.JPG', 'IMG_3382.JPG', 'IMG_3383.JPG', 'IMG_3384.JPG', 'IMG_3388.JPG', 'IMG_3389.JPG', 'IMG_3390.JPG', 'IMG_3391.JPG', 'IMG_3394.JPG', 'IMG_3395.JPG', 'IMG_3397.JPG', 'IMG_3398.JPG', 'IMG_3399.JPG', 'IMG_3400.JPG'
+        ]
+      },
+      { name: 'Phú Yên', folder: 'Phú Yên', photos: [] }
+    ];
+    let selectedAlbum = 0;
+    let visiblePhotos = [];
+    let currentPhoto = 0;
+    const gallery = document.getElementById('gallery');
+    const count = document.getElementById('count');
+    const search = document.getElementById('search');
+    const lightbox = document.getElementById('lightbox');
+    const largeImage = document.getElementById('largeImage');
+    const viewerName = document.getElementById('viewerName');
+    const download = document.getElementById('download');
+
+    function imageUrl(album, file) {
+      return encodeURIComponent(album.folder) + '/' + encodeURIComponent(file);
+    }
+
+    function renderTabs() {
+      const tabs = document.getElementById('tabs');
+      tabs.innerHTML = albums.map((album, index) => `<button class="${index === selectedAlbum ? 'active' : ''}" data-album="${index}">${album.name} <small>(${album.photos.length})</small></button>`).join('');
+      tabs.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
+        selectedAlbum = Number(button.dataset.album);
+        search.value = '';
+        renderTabs();
+        renderGallery();
+      }));
+    }
+
+    function renderGallery() {
+      const album = albums[selectedAlbum];
+      const query = search.value.trim().toLowerCase();
+      visiblePhotos = album.photos.filter(file => file.toLowerCase().includes(query));
+      count.textContent = `${visiblePhotos.length} ảnh trong album ${album.name}`;
+      gallery.innerHTML = visiblePhotos.length ? visiblePhotos.map((file, index) => `
+        <figure class="photo" data-index="${index}">
+          <img src="${imageUrl(album, file)}" alt="${file}" loading="lazy">
+          <figcaption>${file}</figcaption>
+        </figure>`).join('') : '<p class="empty">Album này chưa có ảnh.</p>';
+      gallery.querySelectorAll('.photo').forEach(photo => photo.addEventListener('click', () => openViewer(Number(photo.dataset.index))));
+    }
+
+    function openViewer(index) {
+      currentPhoto = index;
+      const album = albums[selectedAlbum];
+      const file = visiblePhotos[currentPhoto];
+      const url = imageUrl(album, file);
+      largeImage.src = url;
+      largeImage.alt = file;
+      viewerName.textContent = `${file} · ${currentPhoto + 1}/${visiblePhotos.length}`;
+      download.href = url;
+      lightbox.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+
+    function moveViewer(step) {
+      if (!visiblePhotos.length) return;
+      currentPhoto = (currentPhoto + step + visiblePhotos.length) % visiblePhotos.length;
+      openViewer(currentPhoto);
+    }
+
+    function closeViewer() {
+      lightbox.hidden = true;
+      largeImage.src = '';
+      document.body.style.overflow = '';
+    }
+
+    search.addEventListener('input', renderGallery);
+    document.getElementById('close').addEventListener('click', closeViewer);
+    document.getElementById('previous').addEventListener('click', () => moveViewer(-1));
+    document.getElementById('next').addEventListener('click', () => moveViewer(1));
+    lightbox.addEventListener('click', event => { if (event.target === lightbox) closeViewer(); });
+    document.addEventListener('keydown', event => {
+      if (lightbox.hidden) return;
+      if (event.key === 'Escape') closeViewer();
+      if (event.key === 'ArrowLeft') moveViewer(-1);
+      if (event.key === 'ArrowRight') moveViewer(1);
+    });
+
+    renderTabs();
+    renderGallery();
+  </script>
+</body>
+</html>
